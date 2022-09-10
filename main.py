@@ -6,30 +6,90 @@ import settings
 
 
 class PieceType:
-    PAWN = 0
-    ROOK = 1
-    KNIGHT = 2
-    BISHOP = 3
-    QUEEN = 4
-    KING = 5
+    NONE = None
+    PAWN = 1
+    ROOK = 2
+    KNIGHT = 3
+    BISHOP = 4
+    QUEEN = 5
+    KING = 6
 
 # enumerate all the colors of chess pieces
 
 
 class PieceColor:
-    WHITE = 0
-    BLACK = 1
+    NONE = None
+    WHITE = 8
+    BLACK = 16
 
 # define a class to represent a chess piece
 
 
 class Piece:
-    def __init__(self, piece_type, piece_color):
-        self.type = piece_type
-        self.color = piece_color
+    def __init__(self, fen_character):
+        if fen_character == "P":
+            self.type = PieceType.PAWN
+            self.color = PieceColor.WHITE
+        elif fen_character == "p":
+            self.type = PieceType.PAWN
+            self.color = PieceColor.BLACK
+        elif fen_character == "R":
+            self.type = PieceType.ROOK
+            self.color = PieceColor.WHITE
+        elif fen_character == "r":
+            self.type = PieceType.ROOK
+            self.color = PieceColor.BLACK
+        elif fen_character == "N":
+            self.type = PieceType.KNIGHT
+            self.color = PieceColor.WHITE
+        elif fen_character == "n":
+            self.type = PieceType.KNIGHT
+            self.color = PieceColor.BLACK
+        elif fen_character == "B":
+            self.type = PieceType.BISHOP
+            self.color = PieceColor.WHITE
+        elif fen_character == "b":
+            self.type = PieceType.BISHOP
+            self.color = PieceColor.BLACK
+        elif fen_character == "Q":
+            self.type = PieceType.QUEEN
+            self.color = PieceColor.WHITE
+        elif fen_character == "q":
+            self.type = PieceType.QUEEN
+            self.color = PieceColor.BLACK
+        elif fen_character == "K":
+            self.type = PieceType.KING
+            self.color = PieceColor.WHITE
+        elif fen_character == "k":
+            self.type = PieceType.KING
+            self.color = PieceColor.BLACK
+        else:
+            self.type = PieceType.NONE
+            self.color = PieceColor.NONE
+
+    def fen_char(self):
+
+        my_char = "?"
+        if self.type == PieceType.PAWN:
+            my_char = "P"
+        elif self.type == PieceType.ROOK:
+            my_char = "R"
+        elif self.type == PieceType.KNIGHT:
+            my_char = "N"
+        elif self.type == PieceType.BISHOP:
+            my_char = "B"
+        elif self.type == PieceType.QUEEN:
+            my_char = "Q"
+        elif self.type == PieceType.KING:
+            my_char = "K"
+
+        if self.color == PieceColor.BLACK:
+            my_char = my_char.lower()
+
+        return my_char
 
     def __str__(self):
-        return "Type: " + str(self.type) + " Color: " + str(self.color)
+        return self.fen_char()
 
 # define a class to represent a chess board
 
@@ -37,48 +97,108 @@ class Piece:
 class Board:
     def __init__(self):
         self.board = [[None for x in range(8)] for y in range(8)]
+        self.move = PieceColor.WHITE
 
     def __str__(self):
         return "Board: " + str(self.board)
 
-    def init_board(self):
+    def wipe_board(self):
         # initialize the board with the starting positions
-        for i in range(8):
-            self.board[1][i] = Piece(PieceType.PAWN, PieceColor.WHITE)
-            self.board[6][i] = Piece(PieceType.PAWN, PieceColor.BLACK)
+        for y in range(8):
+            for x in range(8):
+                self.board[y][x] = None
 
-        self.board[0][0] = Piece(PieceType.ROOK, PieceColor.WHITE)
-        self.board[0][7] = Piece(PieceType.ROOK, PieceColor.WHITE)
-        self.board[7][0] = Piece(PieceType.ROOK, PieceColor.BLACK)
-        self.board[7][7] = Piece(PieceType.ROOK, PieceColor.BLACK)
+    def init_board(self):
+        self.fen_decode(
+            'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
-        self.board[0][1] = Piece(PieceType.KNIGHT, PieceColor.WHITE)
-        self.board[0][6] = Piece(PieceType.KNIGHT, PieceColor.WHITE)
-        self.board[7][1] = Piece(PieceType.KNIGHT, PieceColor.BLACK)
-        self.board[7][6] = Piece(PieceType.KNIGHT, PieceColor.BLACK)
+    # Forsyth-Edwards Notation (FEN) is a standard notation for describing
+    # a particular board position of a chess game.
 
-        self.board[0][2] = Piece(PieceType.BISHOP, PieceColor.WHITE)
-        self.board[0][5] = Piece(PieceType.BISHOP, PieceColor.WHITE)
-        self.board[7][2] = Piece(PieceType.BISHOP, PieceColor.BLACK)
-        self.board[7][5] = Piece(PieceType.BISHOP, PieceColor.BLACK)
+    def fen_encode(self):
+        board_string = ""
+        empty_counter = 0
 
-        self.board[0][3] = Piece(PieceType.QUEEN, PieceColor.WHITE)
-        self.board[7][3] = Piece(PieceType.QUEEN, PieceColor.BLACK)
+        for rank in range(8):
+            for file in range(8):
+                if self.board[rank][file] is None:
+                    empty_counter += 1
+                else:
+                    if empty_counter > 0:
+                        board_string += str(empty_counter)
+                        empty_counter = 0
+                    board_string += str(self.board[rank][file])
 
-        self.board[0][4] = Piece(PieceType.KING, PieceColor.WHITE)
-        self.board[7][4] = Piece(PieceType.KING, PieceColor.BLACK)
+            if empty_counter > 0:
+                board_string += str(empty_counter)
+
+            board_string += "/"
+            empty_counter = 0
+
+        board_string = board_string.rstrip("/")
+
+        if self.move == PieceColor.WHITE:
+            board_string += " w"
+        else:
+            board_string += " b"
+
+        return board_string
+
+    def fen_decode(self, board_state: str):
+        print("Loading board state: " + board_state)
+        self.wipe_board()
+        rank = 7
+        file = 0
+
+        fen_chunks = board_state.split(" ")
+
+        if len(fen_chunks) > 0:
+            for char in fen_chunks[0]:
+                if char == "/":
+                    rank -= 1
+                    file = 0
+                elif char.isdigit():
+                    file += int(char)
+                else:
+                    self.board[7 - rank][file] = Piece(char)
+                    file += 1
+
+        if len(fen_chunks) > 1:
+            if fen_chunks[1] == "w":
+                self.move = PieceColor.WHITE
+            else:
+                self.move = PieceColor.BLACK
+
+        print("Board state loaded: " + self.fen_encode())
 
 
 def draw_board():
     # draw the board
-    for y in range(8):
-        for x in range(8):
-            if (x + y) % 2 == 0:
+    for rank in range(8):
+        for file in range(8):
+
+            if (file + rank) % 2 == 0:
                 color = settings.WHITE
             else:
                 color = settings.BLACK
+
             pygame.draw.rect(screen, color, [
-                             x * settings.SQUARE_SIZE, y * settings.SQUARE_SIZE, settings.SQUARE_SIZE, settings.SQUARE_SIZE])
+                             file * settings.SQUARE_SIZE, rank * settings.SQUARE_SIZE, settings.SQUARE_SIZE, settings.SQUARE_SIZE])
+
+            if board.board[rank][file] is not None:
+
+                piece = board.board[rank][file].fen_char()
+                sprite = piece_sprites[piece]
+
+                centered_file = file * settings.SQUARE_SIZE + \
+                    (settings.SQUARE_SIZE / 2) - \
+                    (sprite.get_width() / 2)
+
+                centered_rank = rank * settings.SQUARE_SIZE + \
+                    (settings.SQUARE_SIZE / 2) - \
+                    (sprite.get_height() / 2)
+
+                screen.blit(sprite, [centered_file, centered_rank])
 
 
 def handle_events():
@@ -105,16 +225,43 @@ def main():
     while not done:
         handle_events()
         draw_screen()
-        clock.tick(settings.fps)
+        clock.tick(settings.FPS)
 
 
 if __name__ == "__main__":
-    board = Board()
-    clock = pygame.time.Clock()
-    done = False
+
     pygame.init()
-    font = pygame.font.SysFont(None, settings.FONT_SIZE_NORMAL)
-    screen = pygame.display.set_mode((settings.width, settings.height))
+    screen = pygame.display.set_mode((settings.WIDTH, settings.HEIGHT))
     pygame.display.set_caption("bad-chess")
+    font = pygame.font.SysFont(None, settings.FONT_SIZE_NORMAL)
+    clock = pygame.time.Clock()
+
+    piece_sprites = {
+        'P': pygame.image.load("sprites/white-pawn.png").convert_alpha(),
+        'p': pygame.image.load("sprites/black-pawn.png").convert_alpha(),
+        'R': pygame.image.load("sprites/white-rook.png").convert_alpha(),
+        'r': pygame.image.load("sprites/black-rook.png").convert_alpha(),
+        'N': pygame.image.load("sprites/white-knight.png").convert_alpha(),
+        'n': pygame.image.load("sprites/black-knight.png").convert_alpha(),
+        'B': pygame.image.load("sprites/white-bishop.png").convert_alpha(),
+        'b': pygame.image.load("sprites/black-bishop.png").convert_alpha(),
+        'Q': pygame.image.load("sprites/white-queen.png").convert_alpha(),
+        'q': pygame.image.load("sprites/black-queen.png").convert_alpha(),
+        'K': pygame.image.load("sprites/white-king.png").convert_alpha(),
+        'k': pygame.image.load("sprites/black-king.png").convert_alpha(),
+
+    }
+
+    board = Board()
+    board.init_board()
+    print(board.fen_encode())
+
+    board.fen_decode("r1b1k1nr/p2p1pNp/n2B4/1p1NP2P/6P1/3P1Q2/P1P1K3/q5b1 w")
+    board.fen_decode("8/8/8/4p1K1/2k1P3/8/8/8 b")
+    board.fen_decode("4k2r/6r1/8/8/8/8/3R4/R3K3 w")
+    board.fen_decode(
+        "qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq w")
+
+    done = False
 
     main()
