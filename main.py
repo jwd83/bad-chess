@@ -1,6 +1,9 @@
+# chess board is laid out in rows called ranks and columns called files
+
 import pygame
 import settings
 
+FEN_NEW_GAME = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 # enumerate all the types of chess pieces
 
@@ -95,9 +98,10 @@ class Piece:
 
 
 class Board:
-    def __init__(self):
+    def __init__(self, fen_string: str = FEN_NEW_GAME):
         self.board = [[None for x in range(8)] for y in range(8)]
-        self.move = PieceColor.WHITE
+        self.turn = PieceColor.WHITE
+        self.fen_decode(fen_string)
 
     def __str__(self):
         return "Board: " + str(self.board)
@@ -108,12 +112,25 @@ class Board:
             for x in range(8):
                 self.board[y][x] = None
 
-    def init_board(self):
-        self.fen_decode(
-            'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    def reset_board(self):
+        self.fen_decode(FEN_NEW_GAME)
 
     # Forsyth-Edwards Notation (FEN) is a standard notation for describing
     # a particular board position of a chess game.
+    def move(self, start: str, end: str):
+        print("Moving piece from " + start + " to " + end)
+        start_file = ord(start[0]) - 97
+        start_rank = 8 - int(start[1])
+        end_file = ord(end[0]) - 97
+        end_rank = 8 - int(end[1])
+
+        self.board[end_rank][end_file] = self.board[start_rank][start_file]
+        self.board[start_rank][start_file] = None
+
+        if self.turn == PieceColor.WHITE:
+            self.turn = PieceColor.BLACK
+        else:
+            self.turn = PieceColor.WHITE
 
     def fen_encode(self):
         board_string = ""
@@ -137,7 +154,7 @@ class Board:
 
         board_string = board_string.rstrip("/")
 
-        if self.move == PieceColor.WHITE:
+        if self.turn == PieceColor.WHITE:
             board_string += " w"
         else:
             board_string += " b"
@@ -165,9 +182,9 @@ class Board:
 
         if len(fen_chunks) > 1:
             if fen_chunks[1] == "w":
-                self.move = PieceColor.WHITE
+                self.turn = PieceColor.WHITE
             else:
-                self.move = PieceColor.BLACK
+                self.turn = PieceColor.BLACK
 
         print("Board state loaded: " + self.fen_encode())
 
@@ -176,14 +193,40 @@ def draw_board():
     # draw the board
     for rank in range(8):
         for file in range(8):
+            # generate the tile name
+            tile_name = chr(file + 97) + str(8 - rank)
 
             if (file + rank) % 2 == 0:
                 color = settings.WHITE
             else:
                 color = settings.BLACK
 
+            if tile_name == mouse['tile'] and mouse['dragging'] is None:
+                if board.board[rank][file] is not None:
+                    if board.board[rank][file].color == board.turn:
+                        color = (40, 255, 40)
+                        if mouse['clicked']:
+                            mouse['dragging'] = tile_name
+                    else:
+                        color = (255, 40, 40)
+
+            if mouse['dragging'] is not None:
+
+                if mouse['dragging'] == tile_name:
+                    color = (255, 255, 40)
+                elif mouse['tile'] == tile_name:
+                    color = (40, 40, 255)
+                    if mouse['clicked']:
+                        board.move(mouse['dragging'], tile_name)
+                        mouse['dragging'] = None
+
             pygame.draw.rect(screen, color, [
                              file * settings.SQUARE_SIZE, rank * settings.SQUARE_SIZE, settings.SQUARE_SIZE, settings.SQUARE_SIZE])
+
+            # render the tile name to the screen
+            text = font.render(tile_name, True, settings.FONT_COLOR_WHITE)
+            screen.blit(text, (file * settings.SQUARE_SIZE +
+                        10, rank * settings.SQUARE_SIZE + 10))
 
             if board.board[rank][file] is not None:
 
@@ -200,16 +243,23 @@ def draw_board():
 
                 screen.blit(sprite, [centered_file, centered_rank])
 
+    # draw the fen string
+    fen_string = board.fen_encode()
+    text = font.render(fen_string, True, settings.FONT_COLOR_WHITE)
+    screen.blit(text, (8, 8 * settings.SQUARE_SIZE + 8))
+
 
 def handle_events():
-    global done
-
+    global done, mouse
+    mouse['clicked'] = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 done = True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse['clicked'] = True
 
 
 def draw_screen():
@@ -220,10 +270,28 @@ def draw_screen():
     pygame.display.flip()
 
 
+def get_mouse_tile():
+    x, y = pygame.mouse.get_pos()
+    if x < 800 and y < 800:
+        # get the tile name
+        file = int(x / settings.SQUARE_SIZE)
+        rank = int(y / settings.SQUARE_SIZE)
+        tile_name = chr(file + 97) + str(8 - rank)
+
+        return tile_name
+    else:
+        return None
+
+
+def handle_input():
+    mouse['tile'] = get_mouse_tile()
+
+
 def main():
 
     while not done:
         handle_events()
+        handle_input()
         draw_screen()
         clock.tick(settings.FPS)
 
@@ -252,15 +320,25 @@ if __name__ == "__main__":
 
     }
 
+    mouse = {
+        "tile": None,
+        "clicked": None,
+        "dragging": None
+    }
+
     board = Board()
-    board.init_board()
+    board.move('e2', 'e4')
+    print(board.fen_encode())
+    board.move('e7', 'e5')
     print(board.fen_encode())
 
-    board.fen_decode("r1b1k1nr/p2p1pNp/n2B4/1p1NP2P/6P1/3P1Q2/P1P1K3/q5b1 w")
-    board.fen_decode("8/8/8/4p1K1/2k1P3/8/8/8 b")
-    board.fen_decode("4k2r/6r1/8/8/8/8/3R4/R3K3 w")
-    board.fen_decode(
-        "qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq w")
+    # print(board.fen_encode())
+
+    # board.fen_decode("r1b1k1nr/p2p1pNp/n2B4/1p1NP2P/6P1/3P1Q2/P1P1K3/q5b1 w")
+    # board.fen_decode("8/8/8/4p1K1/2k1P3/8/8/8 b")
+    # board.fen_decode("4k2r/6r1/8/8/8/8/3R4/R3K3 w")
+    # board.fen_decode(
+    #     "qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq/qQqQqQqQ/QqQqQqQq w")
 
     done = False
 
