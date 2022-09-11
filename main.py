@@ -1,4 +1,8 @@
 # chess board is laid out in rows called ranks and columns called files
+# the board is 8 ranks and 8 files
+#
+# Forsyth-Edwards Notation (FEN) is a standard notation for describing
+# a particular board position of a chess game.
 
 import pygame
 import settings
@@ -115,8 +119,6 @@ class Board:
     def reset_board(self):
         self.fen_decode(FEN_NEW_GAME)
 
-    # Forsyth-Edwards Notation (FEN) is a standard notation for describing
-    # a particular board position of a chess game.
     def move(self, start: str, end: str):
         print("Moving piece from " + start + " to " + end)
         start_file = ord(start[0]) - 97
@@ -188,6 +190,321 @@ class Board:
 
         print("Board state loaded: " + self.fen_encode())
 
+    def enumerate_moves(self, start: str):
+        print("Enumerating moves from " + start)
+        moves = []
+        start_file = ord(start[0]) - 97
+        start_rank = 8 - int(start[1])
+
+        piece = self.board[start_rank][start_file]
+
+        if piece is None:
+            return None
+
+        if piece.type == PieceType.PAWN:
+            if piece.color == PieceColor.WHITE:
+                if start_rank == 6:
+                    # check for first turn move
+                    if self.board[start_rank - 1][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank - 1)))
+                    if self.board[start_rank - 2][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank - 2)))
+                else:
+                    # subsequent moves
+                    if self.board[start_rank - 1][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank - 1)))
+                # check for captures
+                if start_rank > 0:
+                    if start_file > 0:
+                        if self.board[start_rank - 1][start_file - 1] is not None:
+                            if self.board[start_rank - 1][start_file - 1].color == PieceColor.BLACK:
+                                moves.append(start + chr(start_file + 96) +
+                                             str(8 - (start_rank - 1)))
+                    if start_file < 7:
+                        if self.board[start_rank - 1][start_file + 1] is not None:
+                            if self.board[start_rank - 1][start_file + 1].color == PieceColor.BLACK:
+                                moves.append(start + chr(start_file + 98) +
+                                             str(8 - (start_rank - 1)))
+
+            else:
+                if start_rank == 1:
+                    # check for first turn move
+                    if self.board[start_rank + 1][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank + 1)))
+                    if self.board[start_rank + 2][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank + 2)))
+                else:
+                    # subsequent moves
+                    if self.board[start_rank + 1][start_file] is None:
+                        moves.append(start + chr(start_file + 97) +
+                                     str(8 - (start_rank + 1)))
+                # check for captures
+                if start_rank < 7:
+                    if start_file > 0:
+                        if self.board[start_rank + 1][start_file - 1] is not None:
+                            if self.board[start_rank + 1][start_file - 1].color == PieceColor.WHITE:
+                                moves.append(start + chr(start_file + 96) +
+                                             str(8 - (start_rank + 1)))
+                    if start_file < 7:
+                        if self.board[start_rank + 1][start_file + 1] is not None:
+                            if self.board[start_rank + 1][start_file + 1].color == PieceColor.WHITE:
+                                moves.append(start + chr(start_file + 98) +
+                                             str(8 - (start_rank + 1)))
+
+        elif piece.type == PieceType.ROOK:
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7:
+                cur_rank += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0:
+                cur_rank -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_file < 7:
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_file > 0:
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+        elif piece.type == PieceType.KNIGHT:
+            pass
+        elif piece.type == PieceType.BISHOP:
+            # check for captures in each diagonal
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7 and cur_file < 7:
+                cur_rank += 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7 and cur_file > 0:
+                cur_rank += 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0 and cur_file < 7:
+                cur_rank -= 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0 and cur_file > 0:
+                cur_rank -= 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+        elif piece.type == PieceType.QUEEN:
+            # check the queen horizontal and vertical moves
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7:
+                cur_rank += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0:
+                cur_rank -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_file < 7:
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_file > 0:
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            # check the queen diagonal moves
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7 and cur_file < 7:
+                cur_rank += 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank < 7 and cur_file > 0:
+                cur_rank += 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0 and cur_file < 7:
+                cur_rank -= 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            while cur_rank > 0 and cur_file > 0:
+                cur_rank -= 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+                    break
+        elif piece.type == PieceType.KING:
+            pass
+
+        print("Moves: " + str(moves))
+
+        if len(moves) > 0:
+            return moves
+        else:
+            return None
+
 
 def draw_board():
     # draw the board
@@ -206,19 +523,29 @@ def draw_board():
                     if board.board[rank][file].color == board.turn:
                         color = (40, 255, 40)
                         if mouse['clicked']:
-                            mouse['dragging'] = tile_name
+                            mouse['moves'] = board.enumerate_moves(tile_name)
+                            if mouse['moves'] is not None:
+                                mouse['dragging'] = tile_name
+
                     else:
                         color = (255, 40, 40)
+
+            if mouse['moves'] is not None:
+                search = mouse['dragging'] + tile_name
+                if search in mouse['moves']:
+                    color = (255, 255, 180)
 
             if mouse['dragging'] is not None:
 
                 if mouse['dragging'] == tile_name:
                     color = (255, 255, 40)
+
                 elif mouse['tile'] == tile_name:
                     color = (40, 40, 255)
                     if mouse['clicked']:
                         board.move(mouse['dragging'], tile_name)
                         mouse['dragging'] = None
+                        mouse['moves'] = None
 
             pygame.draw.rect(screen, color, [
                              file * settings.SQUARE_SIZE, rank * settings.SQUARE_SIZE, settings.SQUARE_SIZE, settings.SQUARE_SIZE])
@@ -305,25 +632,25 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
 
     piece_sprites = {
-        'P': pygame.image.load("sprites/white-pawn.png").convert_alpha(),
-        'p': pygame.image.load("sprites/black-pawn.png").convert_alpha(),
-        'R': pygame.image.load("sprites/white-rook.png").convert_alpha(),
-        'r': pygame.image.load("sprites/black-rook.png").convert_alpha(),
-        'N': pygame.image.load("sprites/white-knight.png").convert_alpha(),
-        'n': pygame.image.load("sprites/black-knight.png").convert_alpha(),
         'B': pygame.image.load("sprites/white-bishop.png").convert_alpha(),
-        'b': pygame.image.load("sprites/black-bishop.png").convert_alpha(),
-        'Q': pygame.image.load("sprites/white-queen.png").convert_alpha(),
-        'q': pygame.image.load("sprites/black-queen.png").convert_alpha(),
         'K': pygame.image.load("sprites/white-king.png").convert_alpha(),
+        'N': pygame.image.load("sprites/white-knight.png").convert_alpha(),
+        'P': pygame.image.load("sprites/white-pawn.png").convert_alpha(),
+        'Q': pygame.image.load("sprites/white-queen.png").convert_alpha(),
+        'R': pygame.image.load("sprites/white-rook.png").convert_alpha(),
+        'b': pygame.image.load("sprites/black-bishop.png").convert_alpha(),
         'k': pygame.image.load("sprites/black-king.png").convert_alpha(),
-
+        'n': pygame.image.load("sprites/black-knight.png").convert_alpha(),
+        'p': pygame.image.load("sprites/black-pawn.png").convert_alpha(),
+        'q': pygame.image.load("sprites/black-queen.png").convert_alpha(),
+        'r': pygame.image.load("sprites/black-rook.png").convert_alpha(),
     }
 
     mouse = {
         "tile": None,
         "clicked": None,
-        "dragging": None
+        "dragging": None,
+        "moves": None
     }
 
     board = Board()
