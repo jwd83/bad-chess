@@ -1,3 +1,12 @@
+# Bad Chess
+# Copyright (C) Jared De Blander 2022
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+
 # chess board is laid out in rows called ranks and columns called files
 # the board is 8 ranks and 8 files
 #
@@ -74,6 +83,22 @@ class Piece:
             self.type = PieceType.NONE
             self.color = PieceColor.NONE
 
+    def value(self):
+        if self.type == PieceType.PAWN:
+            return 1
+        elif self.type == PieceType.ROOK:
+            return 5
+        elif self.type == PieceType.KNIGHT:
+            return 3
+        elif self.type == PieceType.BISHOP:
+            return 3
+        elif self.type == PieceType.QUEEN:
+            return 9
+        elif self.type == PieceType.KING:
+            return 100
+        else:
+            return None
+
     def fen_char(self):
 
         my_char = "?"
@@ -115,6 +140,21 @@ class Board:
         for y in range(8):
             for x in range(8):
                 self.board[y][x] = None
+
+    def army_difference(self, color: PieceColor = None):
+        army_differential = 0
+        for rank in range(8):
+            for file in range(8):
+                if self.board[rank][file] is not None:
+                    if self.board[rank][file].color == PieceColor.WHITE:
+                        army_differential += self.board[rank][file].value()
+                    else:
+                        army_differential -= self.board[rank][file].value()
+
+        if color == PieceColor.BLACK:
+            army_differential = -army_differential
+
+        return army_differential
 
     def reset_board(self):
         self.fen_decode(FEN_NEW_GAME)
@@ -496,7 +536,117 @@ class Board:
                                      str(8 - cur_rank))
                     break
         elif piece.type == PieceType.KING:
-            pass
+            # check the kings moves
+
+            # king horizontal and vertical moves
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank < 7:
+                cur_rank += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank > 0:
+                cur_rank -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_file < 7:
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_file > 0:
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            # king diagonal moves
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank < 7 and cur_file < 7:
+                cur_rank += 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank < 7 and cur_file > 0:
+                cur_rank += 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank > 0 and cur_file < 7:
+                cur_rank -= 1
+                cur_file += 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
+
+            cur_rank = start_rank
+            cur_file = start_file
+
+            if cur_rank > 0 and cur_file > 0:
+                cur_rank -= 1
+                cur_file -= 1
+                if self.board[cur_rank][cur_file] is None:
+                    moves.append(start + chr(cur_file + 97) +
+                                 str(8 - cur_rank))
+                else:
+                    if self.board[cur_rank][cur_file].color != piece.color:
+                        moves.append(start + chr(cur_file + 97) +
+                                     str(8 - cur_rank))
 
         print("Moves: " + str(moves))
 
@@ -571,8 +721,13 @@ def draw_board():
                 screen.blit(sprite, [centered_file, centered_rank])
 
     # draw the fen string
-    fen_string = board.fen_encode()
-    text = font.render(fen_string, True, settings.FONT_COLOR_WHITE)
+    army_dif = board.army_difference()
+    if army_dif >= 0:
+        army_dif = " : White +" + str(army_dif)
+    else:
+        army_dif = " : Black +" + str(-army_dif)
+    scoreboard = board.fen_encode() + army_dif
+    text = font.render(scoreboard, True, settings.FONT_COLOR_WHITE)
     screen.blit(text, (8, 8 * settings.SQUARE_SIZE + 8))
 
 
